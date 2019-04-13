@@ -1,0 +1,43 @@
+[package]
+edition = "2018"
+name = "ara-service"
+version = "0.1.0"
+authors = ["Murali Mohan Rath <murali@mmrath.com>"]
+
+[dependencies]
+ara-model={version = "^0.1", path = "../ara-model"}
+ara-error={version = "^0.1", path = "../ara-error"}
+log = "0.4.6"
+fern= "0.5.7"
+failure= "0.1.5"
+serde = "1.0.89"
+serde_json = "1.0.39"
+chrono = { version = "0.4.6", features = ["serde"] }
+dotenv= "0.13.0"
+diesel = { version = "1.4.2", features = ["postgres","chrono"] }
+r2d2 = "0.8.3"
+r2d2-diesel= "1.0.0"
+lazy_static= "1.3.0"
+once_cell = "0.1.8"
+rand= "0.6.5"
+ring = "0.13"
+argonautica= "0.2.0"
+uuid = { version = "0.7.2", features = ["v4","serde"] }
+handlebars= "1.1.0"
+config = "0.9.2"
+hex = "0.3.2"
+validator= "0.8.0"
+validator_derive = "0.8.0"
+derive_builder = "0.7.1"
+strum = "0.14.0"
+strum_macros = "0.14.0"
+err-derive = "0.1.5"
+
+[dev-dependencies]
+jsonpath= "0.1.1"
+postgres= "0.15.2"
+reqwest= "0.9.11"
+parking_lot = { version = "0.7.1", features = ["nightly"] }
+assert_cmd = "0.11.0"
+env_logger= "0.6.1"
+

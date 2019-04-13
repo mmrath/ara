@@ -1,0 +1,15 @@
+[package]
+edition = "2018"
+name = "ara-error-macros"
+version = "0.1.0"
+authors = ["Murali Mohan Rath <murali@mmrath.com>"]
+
+[lib]
+name = "ara_error_macros"
+proc-macro = true
+
+[dependencies]
+quote = "0.6.11"
+syn = "0.15.29"
+synstructure = "0.10.1"
+proc-macro2 = "0.4.27"

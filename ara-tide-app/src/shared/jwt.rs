@@ -1,0 +1,48 @@
+use chrono::{DateTime, Duration, Utc};
+use failure::Error;
+use jsonwebtoken::{decode, encode, Algorithm, Header, Validation};
+use ara_model::core::User;
+use ara_service::shared::new_uuid;
+use serde::{Deserialize, Serialize};
+
+#[derive(Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct JwtClaim {
+    exp: DateTime<Utc>,
+    iat: DateTime<Utc>,
+    jti: String,
+    first_name: String,
+    last_name: String,
+    email: String,
+}
+
+pub(crate) fn new_token(user: &User) -> Result<String, Error> {
+    let expire_date = Utc::now() + Duration::days(30);
+    let claim = JwtClaim {
+        exp: expire_date,
+        iat: Utc::now(),
+        jti: new_uuid(),
+        first_name: user.first_name.clone(),
+        last_name: user.last_name.clone(),
+        email: user.email.clone(),
+    };
+    encode_jwt(&claim)
+}
+
+fn encode_jwt(claim: &JwtClaim) -> Result<String, Error> {
+    let key = "secret";
+
+    let header = Header::default();
+
+    let token = encode(&header, &claim, key.as_ref())?;
+
+    Ok(token)
+}
+
+#[allow(dead_code)]
+pub(crate) fn decode_jwt(token: &str) -> Result<JwtClaim, Error> {
+    let key = "secret";
+
+    let token_data = decode::<JwtClaim>(&token, key.as_ref(), &Validation::new(Algorithm::HS256))?;
+    Ok(token_data.claims)
+}

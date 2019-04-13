@@ -1,0 +1,18 @@
+<!DOCTYPE HTML>
+<html>
+<head>
+    <title>{{user.first_name}} - activate your account</title>
+</head>
+<body>
+<h2>Activate Your Account</h2>
+<p>
+    We just need to validate your email address to activate your account. Simply click the following link:
+</p>
+<a href="{{base_url}}/api/user/activate/{{token}}">Activate my account</a>
+
+<p>If the link does not work, copy the below URL into your browser:</p>
+<a href="{{base_url}}/api/user/activate/{{token}}">{{base_url}}/api/user/activate/{{token}}</a>
+
+Thank you
+</body>
+</html>

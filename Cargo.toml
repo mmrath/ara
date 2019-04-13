@@ -1,0 +1,12 @@
+[workspace]
+members = [
+    "ara-common",
+    "ara-error",
+    "ara-error-macros",
+    "ara-model",
+    "ara-service",
+    "ara-rocket-app",
+    "ara-admin-api",
+    "ara-test-utils"
+]
+

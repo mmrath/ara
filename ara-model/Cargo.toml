@@ -1,0 +1,27 @@
+[package]
+edition = "2018"
+name = "ara-model"
+version = "0.1.0"
+authors = ["Murali Mohan Rath <murali@mmrath.com>"]
+
+
+[lib]
+name = "ara_model"
+path = "src/lib.rs"
+
+
+[dependencies]
+ara-error={version = "^0.1", path = "../ara-error"}
+failure= "0.1.5"
+serde = { version = "1.0.89", features = ["derive"] }
+serde_json = "1.0.39"
+chrono = { version = "0.4.6", features = ["serde"] }
+diesel = { version = "1.4.2", features = ["postgres","chrono"] }
+r2d2 = "0.8.3"
+r2d2-diesel= "1.0.0"
+strum = "0.14.0"
+strum_macros = "0.14.0"
+log= "0.4.6"
+err-derive = "0.1.5"
+validator= "0.8.0"
+validator_derive = "0.8.0"

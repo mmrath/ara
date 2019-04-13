@@ -1,0 +1,20 @@
+refresh_rate: 30 seconds
+appenders:
+  stdout:
+    kind: console
+    encoder:
+      pattern: "{d} - {l:>5.5} {f}:{L} - {M}:{t} - {T} - {m}{n}"
+root:
+  level: info
+  appenders:
+  - stdout
+loggers:
+  launch:
+    level: info
+    appenders:
+    - stdout
+  app::requests:
+    level: info
+    appenders:
+    - stdout
+    additive: false

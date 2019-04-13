@@ -1,0 +1,33 @@
+[package]
+edition = "2018"
+name = "ara-tide-app"
+version = "0.1.0"
+authors = ["Murali Mohan Rath <murali@mmrath.com>"]
+
+[[bin]]
+name = "ara_tide_app"
+path = "src/main.rs"
+
+
+[dependencies]
+log = "0.4"
+fern="0.5"
+ara-service={version = "^0.1", path = "../ara-service"}
+ara-model={version = "^0.1", path = "../ara-model"}
+ara-error={version = "^0.1", path = "../ara-error"}
+chrono = { version = "0.4", features = ["serde"] }
+dotenv="^0.12"
+tide={version="*", path="/Users/mmrath/Projects/Rust/tide"}
+serde="^1.0"
+serde_json="^1.0"
+http="*"
+http-service="*"
+jsonwebtoken="^5.0"
+diesel_migrations="^1.4"
+failure="^0.1"
+
+
+[dependencies.futures-preview]
+features = ["compat"]
+version = "0.3.0-alpha.11"
+

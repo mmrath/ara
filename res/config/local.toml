@@ -1,0 +1,14 @@
+[server]
+base_url="http://127.0.0.1:9000"
+
+[database]
+url="postgres://fina_test:password@localhost/fina_testdb"
+
+[smtp]
+host="127.0.0.1"
+port=2500
+use_tls=false
+username="test"
+password="test"
+from_email="noreply@test.com"
+
