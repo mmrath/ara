@@ -5,3 +5,14 @@ authors = ["Murali Mohan Rath <murali@mmrath.com>"]
 edition = "2018"
 
 [dependencies]
+ara-model={version = "^0.1", path = "../ara-model"}
+ara-error={version = "^0.1", path = "../ara-error"}
+err-derive = "0.1.5"
+failure= "0.1.5"
+serde = "1.0.89"
+serde_json = "1.0.39"
+once_cell = "0.1.8"
+config = "0.9.2"
+log = "0.4.6"
+r2d2 = "0.8.3"
+r2d2-diesel= "1.0.0"

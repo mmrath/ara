@@ -1,10 +1,10 @@
-use crate::core::user;
+use crate::web::core::user;
 use log::info;
 use rocket::config::{Config, Environment};
 use rocket::Rocket;
 use rocket_contrib::json::JsonValue;
 use ara_model::db::PooledConnection;
-use ara_service::shared::config::AppConfig;
+use ara_common::config::AppConfig;
 
 fn setup_logger() -> Result<(), failure::Error> {
     log4rs::init_file("res/config/log4rs.yaml", Default::default()).unwrap();
@@ -20,7 +20,7 @@ pub fn run(config_dir: &str, env: &str) {
 
 pub fn rocket(config: &AppConfig) -> (Rocket, PooledConnection) {
     info!("Launching server with config {}", json!(config).to_string());
-    let pool = ara_service::shared::db::establish_connection_pool(&config.database);
+    let pool = ara_common::db::establish_connection_pool(config.database.url.as_str());
     let conn = pool.get().expect("database connection for testing");
 
     let port = config.server.port;

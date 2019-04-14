@@ -3,7 +3,7 @@ use rocket::request::{self, FromRequest};
 use rocket::{Outcome, Request, State};
 use ara_model::core::User;
 use ara_model::db::{Connection, ConnectionPool, PooledConnection};
-use ara_service::shared::{Context, PlainContext};
+use ara_common::context::{self, Context};
 
 pub struct AuthContext {
     // add user here
@@ -15,13 +15,13 @@ pub struct UnauthContext {
     db: PooledConnection,
 }
 
-impl PlainContext for UnauthContext {
+impl context::UnauthContext for UnauthContext {
     fn db(&self) -> &Connection {
         &self.db
     }
 }
 
-impl PlainContext for AuthContext {
+impl context::UnauthContext for AuthContext {
     fn db(&self) -> &Connection {
         &self.db
     }

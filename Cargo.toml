@@ -6,7 +6,7 @@ members = [
     "ara-model",
     "ara-service",
     "ara-rocket-app",
-    "ara-admin-api",
+    "ara-admin",
     "ara-test-utils"
 ]
 
