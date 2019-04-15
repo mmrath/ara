@@ -23,7 +23,7 @@ pub fn custom_error_derive(s: Structure<'_>) -> TokenStream {
     let mut http_match_wings: Vec<TokenStream> = Vec::new();
 
     if let Data::Enum(ref data_enum) = ast.data {
-        data_enum.variants.iter().for_each(|v| {
+        s.variants().iter().for_each(|v| {
             let (mut f, m) = process_variant(&ast.ident, &error_type, v);
             from_impls.append(&mut f);
             http_match_wings.push(m);
@@ -61,7 +61,6 @@ pub fn custom_error_derive(s: Structure<'_>) -> TokenStream {
                     val
                 }
             }
-
         }
     })
 }
@@ -69,13 +68,13 @@ pub fn custom_error_derive(s: Structure<'_>) -> TokenStream {
 fn process_variant(
     enum_name: &Ident,
     error_type: &Ident,
-    variant: &syn::Variant,
+    variant: &synstructure::VariantInfo<'_>,
 ) -> (Vec<TokenStream>, TokenStream) {
     let mut from_impls: Vec<TokenStream> = Vec::new();
     let mut http_impls = None;
 
-    let enum_variant = &variant.ident;
-    for meta_items in variant.attrs.iter().filter_map(get_custom_error_meta_items) {
+    let enum_variant = variant.ast().ident;
+    for meta_items in variant.ast().attrs.iter().filter_map(get_custom_error_meta_items) {
         for meta_item in meta_items {
             match meta_item {
                 // Parse `#[serde(bound(serialize = "D: Serialize", deserialize = "D: Deserialize"))]`
@@ -85,9 +84,11 @@ fn process_variant(
                             Meta(Word(ref word)) => {
                                 let q = quote! {
                                     impl From<#word> for #error_type {
-                                        fn from(err: #word) -> #error_type {
+                                        fn from(err: #word) -> Self {
                                             use failure::Fail;
-                                            #error_type::map_to(#enum_name::#enum_variant)(err)
+                                            Self {
+                                                inner: Context::new(#enum_name::#enum_variant(err.into()))
+                                            }
                                         }
                                     }
                                 };
@@ -105,8 +106,9 @@ fn process_variant(
                                     panic!("Only one http attribute can be specified")
                                 } else {
                                     let code = http_lit.value();
+                                    let pat = variant.pat();
                                     let http_match_wing = quote! {
-                                        #enum_name::#enum_variant => {
+                                        #pat => {
                                             return #code as u16
                                         },
                                     };
@@ -152,19 +154,20 @@ fn generate_error_type(enum_name: &Ident, error_type: &Ident) -> TokenStream {
             use failure::{Fail,Backtrace,Context,Error};
             use std::error::Error as StdError;
             use std::fmt;
+            use ara_error::ApiErrorKind;
 
             #[derive(Debug)]
             pub struct #error_type {
                 pub(crate) inner: Context<#enum_name>,
             }
 
-
-            impl StdError for #error_type {
-                fn description(&self) -> &str {
-                    self.inner.get_context().description()
+            impl Fail for #error_type {
+                fn cause(&self) -> Option<&Fail> {
+                    self.inner.cause()
                 }
-                fn cause(&self) -> Option<&dyn StdError> {
-                    Some(self.inner.get_context())
+
+                fn backtrace(&self) -> Option<&Backtrace> {
+                    self.inner.backtrace()
                 }
             }
 
@@ -174,11 +177,11 @@ fn generate_error_type(enum_name: &Ident, error_type: &Ident) -> TokenStream {
                 }
             }
 
-            impl #error_type {
-                pub fn map_to<T: Into<Error>>(error_kind: #enum_name) -> impl Fn(T) -> #error_type {
-                    move |err| #error_type { inner: err.into().context(error_kind) }
-                }
+            impl ApiErrorKind for #enum_name {
+                type Error = #error_type;
+            }
 
+            impl #error_type {
                 fn kind(&self) -> &#enum_name {
                     self.inner.get_context()
                 }

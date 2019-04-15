@@ -1,10 +1,10 @@
 use crate::shared::json_map;
+use ara_model::core::{read_notification, Notification, User};
+use ara_model::db::Connection;
 use diesel::query_dsl::RunQueryDsl;
 use log::info;
 use rocket::http::{ContentType, Status};
 use rocket::local::{Client, LocalResponse};
-use ara_model::core::{read_notification, Notification, User};
-use ara_model::db::Connection;
 use serde_json::json;
 
 static TEST_USERNAME: &str = "testuser";

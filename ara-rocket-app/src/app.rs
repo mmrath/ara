@@ -1,12 +1,12 @@
 use crate::core::user;
 use crate::shared::HashMapSessionStore;
+use ara_model::core::User;
+use ara_model::db::PooledConnection;
+use ara_service::shared::config::AppConfig;
 use log::info;
 use rocket::config::{Config, Environment};
 use rocket::Rocket;
 use rocket_contrib::json::JsonValue;
-use ara_model::core::User;
-use ara_model::db::PooledConnection;
-use ara_service::shared::config::AppConfig;
 use std::sync::{Arc, Mutex};
 
 fn setup_logger() -> Result<(), failure::Error> {

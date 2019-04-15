@@ -1,10 +1,10 @@
 use crate::shared::config::AppConfig;
 use crate::shared::Context;
 use crate::shared::{argon2_hash, argon2_verify, sha512};
-use failure::ResultExt;
-use ara_error::ApiError;
+use ara_error::{ApiError,BoxedError};
 use ara_model::core::{User, UserCredential};
 use ara_model::db::{tx, Connection, TxError};
+use failure::{ResultExt,Fail};
 use serde::Serialize;
 
 pub fn change_password(
@@ -30,14 +30,13 @@ fn change_password_internal(
     new_password: &str,
     config: &AppConfig,
 ) -> Result<(), PasswordChangeError> {
-    let user = User::find_by_id(conn, user.id).context(PasswordChangeErrorKind::Internal)?;
+    let user = User::find_by_id(conn, user.id)?;
 
     if user.active {
         Err(PasswordChangeErrorKind::AccountNotActive)?;
     }
 
-    let user_credential = UserCredential::find_by_id(conn, user.id)
-        .context(PasswordChangeErrorKind::Internal)?
+    let user_credential = UserCredential::find_by_id(conn, user.id)?
         .ok_or_else(|| PasswordChangeErrorKind::InvalidCurrentPassword)?;
 
     let hash = user_credential
@@ -51,39 +50,36 @@ fn change_password_internal(
         &cur_password_sha512,
         config.security.secret_key.as_ref(),
         &hash,
-    )
-    .context(PasswordChangeErrorKind::Internal)?;
+    )?;
 
     if !valid {
-        User::increment_failed_login_count(conn, user.id)
-            .context(PasswordChangeErrorKind::Internal)?;
+        User::increment_failed_login_count(conn, user.id)?;
         Err(PasswordChangeErrorKind::InvalidCurrentPassword)?;
     }
 
     let new_password_sha512 = sha512(new_password.as_bytes());
     let new_password_hash = argon2_hash(&new_password_sha512, config.security.secret_key.as_ref())?;
 
-    User::update_password_hash(conn, user.id, &new_password_hash)
-        .context(PasswordChangeErrorKind::Internal)?;
+    User::update_password_hash(conn, user.id, &new_password_hash)?;
 
     Ok(())
 }
 
-#[derive(Copy, Clone, Eq, PartialEq, Debug, Serialize, Error, ApiError)]
+#[derive(Debug, Serialize, Fail, ApiError)]
 pub enum PasswordChangeErrorKind {
-    #[error(display = "Invalid password")]
+    #[fail(display = "Invalid password")]
     #[api_error(http(400))]
     InvalidCurrentPassword,
 
-    #[error(display = "Account is currently locked")]
+    #[fail(display = "Account is currently locked")]
     #[api_error(http(400))]
     AccountLocked,
 
-    #[error(display = "Account is currently locked")]
+    #[fail(display = "Account is currently locked")]
     #[api_error(http(400))]
     AccountNotActive,
 
-    #[error(display = "Internal error")]
-    #[api_error(map_from(TxError, Error))]
-    Internal,
+    #[fail(display = "{}", _0)]
+    #[api_error(map_from(Error), http(500))]
+    Internal(BoxedError),
 }

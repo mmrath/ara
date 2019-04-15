@@ -1,10 +1,10 @@
 use crate::web::core::user;
+use ara_common::config::AppConfig;
+use ara_model::db::PooledConnection;
 use log::info;
 use rocket::config::{Config, Environment};
 use rocket::Rocket;
 use rocket_contrib::json::JsonValue;
-use ara_model::db::PooledConnection;
-use ara_common::config::AppConfig;
 
 fn setup_logger() -> Result<(), failure::Error> {
     log4rs::init_file("res/config/log4rs.yaml", Default::default()).unwrap();

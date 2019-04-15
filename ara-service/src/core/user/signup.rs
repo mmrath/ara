@@ -1,11 +1,11 @@
 use chrono::Duration;
 use chrono::Utc;
-use failure::Error;
+use failure::{Error,Fail};
 use log::debug;
 use serde::Serialize;
 use serde_json::json;
 
-use ara_error::ApiError;
+use ara_error::{ApiError, BoxedError};
 use ara_model::core::{
     create_notification, Body, NewNotification, NotificationType, UserCredential,
 };
@@ -94,13 +94,13 @@ fn send_activation_email(conn: &Connection, user: &User, email_body: String) -> 
     Ok(())
 }
 
-#[derive(Copy, Clone, Eq, PartialEq, Debug, Serialize, Error, ApiError)]
+#[derive(Debug, Serialize, Fail, ApiError)]
 pub enum SignUpErrorKind {
-    #[error(display = "User already exists with same email")]
+    #[fail(display = "User already exists with same email")]
     #[api_error(http(400))]
     UserEmailAlreadyExists,
 
-    #[error(display = "Internal error")]
-    #[api_error(map_from(TxError, Error))]
-    Internal,
+    #[fail(display = "Internal error")]
+    #[api_error(map_from(Error), http(500))]
+    Internal(BoxedError),
 }

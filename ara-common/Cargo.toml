@@ -7,7 +7,6 @@ edition = "2018"
 [dependencies]
 ara-model={version = "^0.1", path = "../ara-model"}
 ara-error={version = "^0.1", path = "../ara-error"}
-err-derive = "0.1.5"
 failure= "0.1.5"
 serde = "1.0.89"
 serde_json = "1.0.39"

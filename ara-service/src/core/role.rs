@@ -1,6 +1,7 @@
-use crate::shared::ServiceError;
+use crate::shared::{ServiceError, ServiceErrorKind};
 use ara_model::core::{NewRole, Role, RoleUpdate};
 use ara_model::db::{tx, Connection};
+use ara_error::ResultExt;
 
 pub fn find(conn: &Connection, role_id: i32) -> Result<Role, ServiceError> {
     let r = Role::find(conn, role_id)?;
@@ -8,13 +9,13 @@ pub fn find(conn: &Connection, role_id: i32) -> Result<Role, ServiceError> {
 }
 
 pub fn create(conn: &Connection, new_role: &NewRole<'_>) -> Result<Role, ServiceError> {
-    let role = tx(conn, |conn| Role::create(conn, &new_role))?;
-    Ok(role)
+    let r = tx(conn, |conn| Role::create(conn, &new_role))?;
+    Ok(r)
 }
 
 pub fn update(conn: &Connection, role_update: &RoleUpdate) -> Result<Role, ServiceError> {
-    let role = tx(conn, |conn| Role::update(conn, &role_update))?;
-    Ok(role)
+   let r = tx(conn, |conn| Role::update(conn, &role_update))?;
+    Ok(r)
 }
 
 pub fn delete(conn: &Connection, role_id: i32) -> Result<(), ServiceError> {

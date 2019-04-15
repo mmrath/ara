@@ -1,14 +1,23 @@
-use ara_error::ApiError;
+use ara_error::{ApiError,BoxedError};
 use ara_model::db::TxError;
 use serde::Serialize;
+use failure::{Fail, Error};
 
-#[derive(Copy, Clone, Eq, PartialEq, Debug, Error, Serialize, ApiError)]
+#[derive(Debug, Fail, Serialize, ApiError)]
 pub enum ServiceErrorKind {
-    #[error(display = "Validation error")]
+    #[fail(display = "Validation error")]
     #[api_error(http(400))]
     ValidationError,
 
-    #[error(display = "Internal error")]
-    #[api_error(map_from(TxError, Error), http(500))]
-    Internal,
+    #[fail(display = "{}", _0)]
+    #[api_error(map_from(Error), http(500))]
+    Internal(BoxedError),
 }
+
+/*
+impl From<Error> for ara_error::AraError<ServiceErrorKind>{
+    fn from(e: Error) -> Self {
+        AraError::from(e.into())
+    }
+}
+*/

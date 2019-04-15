@@ -59,8 +59,3 @@ pub struct Currency {
     pub symbol: String,
     pub name: String,
 }
-
-
-
-
-

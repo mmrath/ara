@@ -3,27 +3,26 @@ use serde::{Deserialize, Serialize};
 
 use diesel::prelude::*;
 use diesel::{delete, insert_into, update};
-use validator::{Validate,ValidationError};
+use validator::{Validate, ValidationError};
 
-use crate::core::role::{RoleRecord};
+use crate::core::role::RoleRecord;
 use crate::db::Connection;
 use crate::error::DbError;
 use crate::schema::{app_user, user_credential, user_role};
 use chrono::{DateTime, Utc};
 
-
 #[derive(
-Queryable,
-Identifiable,
-AsChangeset,
-Associations,
-Debug,
-Serialize,
-Deserialize,
-Clone,
-Eq,
-PartialEq,
-Validate,
+    Queryable,
+    Identifiable,
+    AsChangeset,
+    Associations,
+    Debug,
+    Serialize,
+    Deserialize,
+    Clone,
+    Eq,
+    PartialEq,
+    Validate,
 )]
 #[table_name = "app_user"]
 #[serde(rename_all = "camelCase")]
@@ -43,8 +42,6 @@ pub struct UserRecord {
     pub updated_by: String,
     pub version: i32,
 }
-
-
 
 #[derive(Debug, Serialize, Deserialize, Clone, Eq, PartialEq)]
 #[serde(rename_all = "camelCase")]
@@ -119,7 +116,6 @@ pub struct UserLogin {
     pub username: String,
     pub password: String,
 }
-
 
 #[derive(Debug, Serialize, Deserialize, Identifiable, Queryable, Associations, Insertable)]
 #[belongs_to(UserRecord, foreign_key = "user_id")]
@@ -252,8 +248,4 @@ impl User {
             .optional()?;
         Ok(res)
     }
-
-
-
 }
-

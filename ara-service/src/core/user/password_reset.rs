@@ -1,10 +1,12 @@
 use crate::shared::config::AppConfig;
 use crate::shared::{argon2_hash, new_uuid, sha256_hex, sha512, template, PlainContext};
-use chrono::{Duration, Utc};
-use failure::{Error, ResultExt};
-use ara_error::ApiError;
-use ara_model::core::{create_notification, Body, NewNotification, NotificationType, User, UserRecord, UserCredential};
+use ara_error::{ApiError, BoxedError};
+use ara_model::core::{
+    create_notification, Body, NewNotification, NotificationType, User, UserCredential, UserRecord,
+};
 use ara_model::db::{tx, Connection, TxError};
+use chrono::{Duration, Utc};
+use failure::{Error, ResultExt, Fail};
 use serde::Serialize;
 
 pub fn password_reset_init(
@@ -13,8 +15,7 @@ pub fn password_reset_init(
 ) -> Result<(), PasswordResetError> {
     tx(context.db(), |conn| {
         let config = AppConfig::get();
-        let user = User::find_by_username(conn, email)
-            .context(PasswordResetErrorKind::Internal)?
+        let user = User::find_by_username(conn, email)?
             .ok_or_else(|| PasswordResetErrorKind::UserDoesNotExists)?;
 
         let uuid = new_uuid();
@@ -24,13 +25,10 @@ pub fn password_reset_init(
                 i64::from(config.security.user_password_reset_token_expiry_mins) * 60,
             );
 
-        UserCredential::update_reset_key(conn, user.id, &uuid_hash, expires_at)
-            .context(PasswordResetErrorKind::Internal)?;
+        UserCredential::update_reset_key(conn, user.id, &uuid_hash, expires_at)?;
 
-        let email_body = create_email_body(&user, &uuid, &config.server.base_url)
-            .context(PasswordResetErrorKind::Internal)?;
-        send_password_reset_email(conn, &user, email_body)
-            .context(PasswordResetErrorKind::Internal)?;
+        let email_body = create_email_body(&user, &uuid, &config.server.base_url)?;
+        send_password_reset_email(conn, &user, email_body)?;
         Ok(())
     })
 }
@@ -45,8 +43,7 @@ fn create_email_body(user: &UserRecord, token: &str, base_url: &str) -> Result<S
     data.insert("user".to_owned(), json!(user));
     data.insert("token".to_owned(), json!(token));
 
-    let email_body = template::render("email/password_reset", &data)
-        .context(PasswordResetErrorKind::Internal)?;
+    let email_body = template::render("email/password_reset", &data)?;
     Ok(email_body)
 }
 
@@ -57,8 +54,7 @@ pub fn password_reset_finish(
 ) -> Result<(), PasswordResetError> {
     tx(context.db(), |conn| {
         let token_hash = sha256_hex(token.as_bytes());
-        let (user, _uc) = UserCredential::find_by_reset_key(conn, &token_hash)
-            .context(PasswordResetErrorKind::Internal)?
+        let (user, _uc) = UserCredential::find_by_reset_key(conn, &token_hash)?
             .ok_or_else(|| PasswordResetErrorKind::InvalidToken)?; //User does not exists
 
         set_user_password(
@@ -66,8 +62,7 @@ pub fn password_reset_finish(
             new_password,
             AppConfig::get().security.secret_key.as_bytes(),
             conn,
-        )
-        .context(PasswordResetErrorKind::Internal)?;
+        )?;
         Ok(())
     })
 }
@@ -100,19 +95,19 @@ fn send_password_reset_email(
         bcc: vec![],
     };
 
-    create_notification(conn, &new_notification).context(PasswordResetErrorKind::Internal)?;
+    create_notification(conn, &new_notification)?;
     Ok(())
 }
 
-#[derive(Copy, Clone, Eq, PartialEq, Debug, Serialize, Error, ApiError)]
+#[derive(Debug, Serialize, Fail, ApiError)]
 pub enum PasswordResetErrorKind {
-    #[error(display = "User does not exists")]
+    #[fail(display = "User does not exists")]
     UserDoesNotExists,
 
-    #[error(display = "Invalid reset token")]
+    #[fail(display = "Invalid reset token")]
     InvalidToken,
 
-    #[error(display = "Internal error")]
-    #[api_error(map_from(TxError))]
-    Internal,
+    #[fail(display = "{}", _0)]
+    #[api_error(map_from(Error), http(500))]
+    Internal(BoxedError),
 }

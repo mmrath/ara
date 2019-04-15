@@ -1,3 +1,4 @@
+use ara_model::db::{Connection, PooledConnection};
 use diesel::connection::SimpleConnection;
 use failure::Error;
 use log::info;
@@ -5,7 +6,6 @@ use once_cell::sync::OnceCell;
 use parking_lot::Mutex;
 use rocket::local::LocalResponse;
 use rocket::Rocket;
-use ara_model::db::{Connection, PooledConnection};
 use serde_json::{Map, Value};
 use std::fs::File;
 use std::io::Read;

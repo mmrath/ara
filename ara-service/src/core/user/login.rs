@@ -1,11 +1,11 @@
 use crate::shared::config::AppConfig;
 use crate::shared::PlainContext;
 use crate::shared::{argon2_verify, sha512};
-use chrono::Utc;
-use failure::ResultExt;
-use ara_error::ApiError;
+use ara_error::{ApiError, BoxedError};
 use ara_model::core::{User, UserCredential};
 use ara_model::db::{tx, Connection, TxError};
+use chrono::Utc;
+use failure::{ResultExt,Fail,Error};
 use serde::Serialize;
 
 pub fn login(
@@ -29,12 +29,10 @@ fn login_internal(
     password: &str,
     secret_key: &[u8],
 ) -> Result<User, LoginError> {
-    let user = User::find_by_username(conn, username)
-        .context(LoginErrorKind::Internal)?
+    let user = User::find_by_username(conn, username)?
         .ok_or_else(|| LoginErrorKind::InvalidUsernameOrPassword)?;
 
-    let user_credential = UserCredential::find_by_id(conn, user.id)
-        .context(LoginErrorKind::Internal)?
+    let user_credential = UserCredential::find_by_id(conn, user.id)?
         .ok_or_else(|| LoginErrorKind::InvalidUsernameOrPassword)?;
 
     let hash = user_credential
@@ -46,10 +44,10 @@ fn login_internal(
     let password_sha512 = sha512(password.as_ref());
 
     let valid =
-        argon2_verify(&password_sha512, secret_key, &hash).context(LoginErrorKind::Internal)?;
+        argon2_verify(&password_sha512, secret_key, &hash)?;
 
     if !valid {
-        User::increment_failed_login_count(conn, user.id).context(LoginErrorKind::Internal)?;
+        User::increment_failed_login_count(conn, user.id)?;
         Err(LoginErrorKind::InvalidUsernameOrPassword)?;
     } else if !user.active {
         Err(LoginErrorKind::AccountNotActivated)?;
@@ -65,25 +63,25 @@ fn login_internal(
     Ok(User::from(user))
 }
 
-#[derive(Copy, Clone, Eq, PartialEq, Debug, Serialize, Error, ApiError)]
+#[derive(Debug, Serialize, Fail, ApiError)]
 pub enum LoginErrorKind {
-    #[error(display = "Invalid username or password")]
+    #[fail(display = "Invalid username or password")]
     #[api_error(http(401))]
     InvalidUsernameOrPassword,
 
-    #[error(display = "Account is currently locked")]
+    #[fail(display = "Account is currently locked")]
     #[api_error(http(401))]
     AccountLocked,
 
-    #[error(display = "Account is not activated")]
+    #[fail(display = "Account is not activated")]
     #[api_error(http(401))]
     AccountNotActivated,
 
-    #[error(display = "Password expired")]
+    #[fail(display = "Password expired")]
     #[api_error(http(401))]
     PasswordExpired,
 
-    #[error(display = "Internal error")]
-    #[api_error(map_from(TxError, Error))]
-    Internal,
+    #[fail(display = "Internal error")]
+    #[api_error(map_from(Error), http(500))]
+    Internal(BoxedError),
 }

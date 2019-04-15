@@ -1,9 +1,9 @@
+use ara_common::context::{self, Context};
+use ara_model::core::User;
+use ara_model::db::{Connection, ConnectionPool, PooledConnection};
 use rocket::http::Status;
 use rocket::request::{self, FromRequest};
 use rocket::{Outcome, Request, State};
-use ara_model::core::User;
-use ara_model::db::{Connection, ConnectionPool, PooledConnection};
-use ara_common::context::{self, Context};
 
 pub struct AuthContext {
     // add user here

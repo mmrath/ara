@@ -6,7 +6,7 @@ use rocket::http::{ContentType, Status};
 use rocket::request::Request;
 use rocket::response::{Responder, Response};
 use rocket_contrib::json::JsonValue;
-use std::error::Error;
+use failure::Fail;
 
 #[derive(Debug)]
 pub struct HttpError {
@@ -23,7 +23,7 @@ impl Display for HttpError {
 
 impl<T> From<T> for HttpError
 where
-    T: ara_error::HttpResponse + Error,
+    T: ara_error::HttpResponse + Fail,
 {
     fn from(e: T) -> Self {
         let status = Status::from_code(e.status()).unwrap_or(Status::InternalServerError);

@@ -4,16 +4,13 @@ use diesel::prelude::*;
 use diesel::update;
 use failure::{ensure, Error, ResultExt};
 
-use crate::core::permission::{
-    Permission
-};
+use crate::core::permission::Permission;
 use crate::db::Connection;
-use crate::schema::{role, role_permission, user_role, permission};
+use crate::schema::{permission, role, role_permission, user_role};
+use chrono::{DateTime, Utc};
 use diesel::expression::exists::exists;
 use diesel::select;
-use chrono::{DateTime, Utc};
 use serde::{Deserialize, Serialize};
-
 
 #[derive(Debug, Serialize, Deserialize, Clone)]
 #[serde(rename_all = "camelCase")]
@@ -93,7 +90,6 @@ impl From<(RoleRecord, Vec<Permission>)> for Role {
         }
     }
 }
-
 
 impl Role {
     pub fn find(conn: &Connection, role_id: i32) -> Result<Role, Error> {

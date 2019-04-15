@@ -1,16 +1,8 @@
-use serde::{Deserialize, Serialize};
 use crate::schema::permission;
+use serde::{Deserialize, Serialize};
 
 #[derive(
-Queryable,
-Identifiable,
-Associations,
-Debug,
-Serialize,
-Deserialize,
-Clone,
-Eq,
-PartialEq,
+    Queryable, Identifiable, Associations, Debug, Serialize, Deserialize, Clone, Eq, PartialEq,
 )]
 #[table_name = "permission"]
 #[serde(rename_all = "camelCase")]

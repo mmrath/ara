@@ -1,7 +1,7 @@
-use chrono::{DateTime, Duration, Utc};
-use jsonwebtoken::{decode, encode, Algorithm, Header, Validation};
 use ara_model::core::User;
 use ara_service::shared::new_uuid;
+use chrono::{DateTime, Duration, Utc};
+use jsonwebtoken::{decode, encode, Algorithm, Header, Validation};
 use serde::{Deserialize, Serialize};
 
 #[derive(Serialize, Deserialize)]

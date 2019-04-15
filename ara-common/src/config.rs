@@ -1,10 +1,10 @@
 use config::{Config, File};
 use failure::{Error, ResultExt};
+use log::info;
 use once_cell::sync::OnceCell;
 use serde::{Deserialize, Serialize};
 use serde_json::json;
 use std::path::Path;
-use log::info;
 
 static APP_CONFIG: OnceCell<AppConfig> = OnceCell::INIT;
 

@@ -2,10 +2,10 @@ use crate::shared::SessionStore;
 use crate::shared::{internal_server_error, HttpError, HttpResultExt, JsonResult};
 use crate::shared::{jwt, HashMapSessionStore};
 use crate::shared::{AuthContext, UnauthContext};
-use rocket::{Route, State};
-use rocket_contrib::json::{Json, JsonValue};
 use ara_model::core::{NewUser, User, UserLogin, UserSignUp};
 use ara_service::core::user;
+use rocket::{Route, State};
+use rocket_contrib::json::{Json, JsonValue};
 use uuid::Uuid;
 
 use failure::format_err;

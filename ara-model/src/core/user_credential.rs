@@ -3,28 +3,27 @@ use validator::Validate;
 
 use failure::{ensure, Error};
 
+use diesel::insert_into;
 use diesel::prelude::*;
-use diesel::{ insert_into};
 
-use crate::core::user::{ UserRecord};
+use crate::core::user::UserRecord;
 use crate::db::Connection;
-use crate::schema::{user_credential};
+use crate::schema::user_credential;
 use chrono::{DateTime, Utc};
 
-
 #[derive(
-Queryable,
-Insertable,
-Identifiable,
-AsChangeset,
-Associations,
-Debug,
-Serialize,
-Deserialize,
-Clone,
-Eq,
-PartialEq,
-Validate,
+    Queryable,
+    Insertable,
+    Identifiable,
+    AsChangeset,
+    Associations,
+    Debug,
+    Serialize,
+    Deserialize,
+    Clone,
+    Eq,
+    PartialEq,
+    Validate,
 )]
 #[table_name = "user_credential"]
 #[serde(rename_all = "camelCase")]
@@ -44,12 +43,8 @@ pub struct UserCredential {
     pub version: i32,
 }
 
-
 impl UserCredential {
-    pub fn find_by_id(
-        conn: &Connection,
-        user_id: i64,
-    ) -> Result<Option<UserCredential>, Error> {
+    pub fn find_by_id(conn: &Connection, user_id: i64) -> Result<Option<UserCredential>, Error> {
         let res = user_credential::table
             .filter(user_credential::id.eq(user_id))
             .select(user_credential::all_columns)
@@ -62,10 +57,9 @@ impl UserCredential {
         let res = insert_into(user_credential::table)
             .values(self)
             .execute(conn)?;
-        ensure!(res==1, "Insert to user_credential failed");
+        ensure!(res == 1, "Insert to user_credential failed");
         Ok(())
     }
-
 
     pub fn find_by_activation_key(
         conn: &Connection,
@@ -113,7 +107,7 @@ impl UserCredential {
                 user_credential::reset_key_expires_at.eq(reset_expiry),
             ))
             .execute(conn)?;
-        ensure!(res==1, "Update failed");
+        ensure!(res == 1, "Update failed");
         Ok(())
     }
 
@@ -127,7 +121,7 @@ impl UserCredential {
                 user_credential::activated.eq(true),
             ))
             .execute(conn)?;
-        ensure!(res==1, "Update failed");
+        ensure!(res == 1, "Update failed");
         Ok(())
     }
 }
