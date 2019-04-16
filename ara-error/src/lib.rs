@@ -64,16 +64,16 @@ impl<SuccessT, ErrorT: Fail> ResultExt for Result<SuccessT, ErrorT> {
 
 // This is to skip serialization of inner value
 #[derive(Debug, Fail, Serialize)]
-#[fail(display = "{}", error)]
+#[fail(display = "{}", inner)]
 pub struct BoxedError {
     #[serde(skip_serializing)]
-    error: Box<dyn std::error::Error + Send + Sync + 'static>
+    inner: failure::Error
 }
 
-impl<T> From<T> for BoxedError where T:Into<Box<dyn std::error::Error + Send + Sync + 'static>>{
-    fn from(err: T) -> Self {
+impl From<failure::Error> for BoxedError{
+    fn from(err: failure::Error) -> Self {
         Self{
-            error:err.into()
+            inner: err
         }
     }
 }
@@ -289,13 +289,6 @@ impl<ErrorKindT: Fail> From<ErrorKindT> for AraError<ErrorKindT> {
     }
 }
 
-/*
-impl<T, K> From<T> for AraError<K> where T: Into<K> {
-    fn from(kind: T) -> Self {
-        Self::from(Context::new(K.from(kind)))
-    }
-}
-*/
 
 
 impl<ErrorKindT: Fail> From<Context<ErrorKindT>> for AraError<ErrorKindT> {
@@ -305,3 +298,132 @@ impl<ErrorKindT: Fail> From<Context<ErrorKindT>> for AraError<ErrorKindT> {
 }
 
 
+
+
+
+
+
+
+
+
+
+
+#[derive(Debug)]
+pub enum AppError<K:Fail>{
+    Handled(Context<K>),
+    Unhandled(BoxedError),
+}
+
+impl<K: Fail> Fail for AppError<K> {
+    fn cause(&self) -> Option<&Fail> {
+        match self {
+            AppError::Handled(inner) => {inner.cause()},
+            AppError::Unhandled(box_error) => {Some(box_error.inner.as_fail())}
+        }
+    }
+
+    fn backtrace(&self) -> Option<&Backtrace> {
+        match self {
+            AppError::Handled(inner) => {inner.backtrace()},
+            AppError::Unhandled(box_error) => {Some(box_error.inner.backtrace())}
+        }
+    }
+}
+
+impl<K: Fail> fmt::Display for AppError<K> {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        match self {
+            AppError::Handled(inner) => {inner.fmt(f)},
+            AppError::Unhandled(box_error) => {box_error.inner.fmt(f)}
+        }
+    }
+}
+
+
+impl<K: Fail+HandledError> From<K> for AppError<K> {
+    fn from(kind: K) -> Self {
+        Self::from(Context::new(kind))
+    }
+}
+
+impl<K: Fail + HandledError> From<Context<K>> for AppError<K> {
+    fn from(inner: Context<K>) -> Self {
+        AppError::Handled(inner)
+    }
+}
+
+impl<K: Fail+HandledError> From<failure::Error> for AppError<K> {
+    fn from(inner: failure::Error) -> Self {
+        AppError::Unhandled(BoxedError{inner})
+    }
+}
+
+impl<K> ApiErrorKind for K where K:Serialize + Fail + HandledError{
+    type Error= AppError<Self>;
+}
+
+pub trait HandledError: Serialize {
+    fn status(&self) -> u16;
+}
+
+impl<T: Serialize + Fail + HandledError> Serialize for AppError<T> {
+    fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
+        where
+            S: ::serde::Serializer,
+    {
+        use serde::ser::SerializeStruct;
+
+        let mut state = serializer.serialize_struct("AppError", 2)?;
+
+        let type_name = match self {
+            AppError::Handled(inner) => {
+                type_name(inner.get_context()).unwrap_or("InternalError")
+            },
+            AppError::Unhandled(_) => {"InternalError"}
+        };
+
+
+        //Remove Kind
+        let error_name = if type_name.ends_with("Kind") {
+            type_name.split_at(type_name.len() - 4).0
+        } else {
+            type_name
+        };
+
+        state.serialize_field("error", error_name)?;
+
+        match self {
+            AppError::Handled(inner) => {
+                state.serialize_field("kind", inner.get_context())?;
+            },
+            AppError::Unhandled(_) => {
+                state.serialize_field("kind", "Unknown")?;
+            }
+        };
+
+        state.end()
+    }
+}
+
+
+impl<T> HttpResponse for AppError<T> where T: Serialize + Fail + HandledError {
+    fn body(&self) -> Value {
+        let val = serde_json::to_value(self).unwrap_or_else(|e| {
+            error!("Error converting to json Value {:?}. Value will be null", e);
+            Value::Null
+        });
+        info!("Returned value {}", val.to_string());
+        val
+    }
+
+    fn status(&self) -> u16 {
+        match self {
+            AppError::Handled(inner) => {
+                inner.get_context().status()
+            },
+            AppError::Unhandled(_) => {
+                500
+            }
+        }
+    }
+}
