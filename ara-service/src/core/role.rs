@@ -1,7 +1,6 @@
-use crate::shared::{ServiceError, ServiceErrorKind};
+use crate::shared::{ServiceError};
 use ara_model::core::{NewRole, Role, RoleUpdate};
 use ara_model::db::{tx, Connection};
-use ara_error::ResultExt;
 
 pub fn find(conn: &Connection, role_id: i32) -> Result<Role, ServiceError> {
     let r = Role::find(conn, role_id)?;

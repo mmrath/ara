@@ -3,9 +3,9 @@ use crate::shared::PlainContext;
 use crate::shared::{argon2_verify, sha512};
 use ara_error::{ApiError, BoxedError};
 use ara_model::core::{User, UserCredential};
-use ara_model::db::{tx, Connection, TxError};
+use ara_model::db::{tx, Connection};
 use chrono::Utc;
-use failure::{ResultExt,Fail,Error};
+use failure::{Fail};
 use serde::Serialize;
 
 pub fn login(

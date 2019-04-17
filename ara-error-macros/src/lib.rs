@@ -6,8 +6,8 @@ use synstructure::decl_derive;
 
 mod api_error;
 mod from_error;
-mod http_response;
+mod http_status;
 
 decl_derive!([ApiError, attributes(api_error)] => api_error::custom_error_derive);
 decl_derive!([FromError, attributes(from_error)] => from_error::from_error_derive);
-decl_derive!([HttpResponse, attributes(http)] => http_response::http_response_derive);
+decl_derive!([HttpStatus, attributes(http_status)] => http_status::http_status_derive);

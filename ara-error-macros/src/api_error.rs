@@ -22,7 +22,7 @@ pub fn custom_error_derive(s: Structure<'_>) -> TokenStream {
     let mut from_impls: Vec<TokenStream> = Vec::new();
     let mut http_match_wings: Vec<TokenStream> = Vec::new();
 
-    if let Data::Enum(ref data_enum) = ast.data {
+    if let Data::Enum(ref _de) = ast.data {
         s.variants().iter().for_each(|v| {
             let (mut f, m) = process_variant(&ast.ident, &error_type, v);
             from_impls.append(&mut f);

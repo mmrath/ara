@@ -1,8 +1,8 @@
 use ara_common::context::Context;
-use ara_common::error::{ServiceError, ServiceErrorKind};
+use ara_common::error::{ServiceError};
 use ara_model::core::{NewUser, User, UserRecord};
 use ara_model::db::tx;
-use ara_error::{ResultExt, AppError, HandledError};
+use ara_error::{AppError, HttpStatus};
 use serde::Serialize;
 use failure::Fail;
 
@@ -31,16 +31,10 @@ pub fn find_user_by_id(context: &dyn Context, id: i64) -> Result<UserRecord, Ser
 
 type UserServiceError = AppError<UserServiceErrorKind>;
 
-#[derive(Debug, Serialize, Fail)]
+#[derive(Debug, Serialize, Fail, HttpStatus)]
 pub enum UserServiceErrorKind {
 
     #[fail(display = "User already exists with same email")]
+    #[http_status(400)]
     UserEmailAlreadyExists{email: String},
-}
-
-
-impl HandledError for UserServiceErrorKind {
-    fn status(&self) -> u16{
-        400
-    }
 }

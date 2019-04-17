@@ -1,9 +1,9 @@
-use failure::{ResultExt,Fail};
+use failure::{Fail};
 use serde::Serialize;
 
 use ara_error::{ApiError, BoxedError};
 use ara_model::core::{User, UserCredential};
-use ara_model::db::{tx, TxError};
+use ara_model::db::{tx};
 
 use crate::shared::{sha256_hex, PlainContext};
 

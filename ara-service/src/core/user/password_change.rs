@@ -3,8 +3,8 @@ use crate::shared::Context;
 use crate::shared::{argon2_hash, argon2_verify, sha512};
 use ara_error::{ApiError,BoxedError};
 use ara_model::core::{User, UserCredential};
-use ara_model::db::{tx, Connection, TxError};
-use failure::{ResultExt,Fail};
+use ara_model::db::{tx, Connection};
+use failure::{Fail};
 use serde::Serialize;
 
 pub fn change_password(

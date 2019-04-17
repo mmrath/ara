@@ -7,8 +7,6 @@
 
 #[macro_use]
 extern crate log;
-#[macro_use]
-extern crate err_derive;
 
 pub mod core;
 pub mod shared;

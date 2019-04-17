@@ -1,5 +1,4 @@
 use ara_error::{ApiError, BoxedError};
-use ara_model::db::TxError;
 use serde::Serialize;
 use failure::Fail;
 

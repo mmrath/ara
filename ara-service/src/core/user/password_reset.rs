@@ -4,9 +4,9 @@ use ara_error::{ApiError, BoxedError};
 use ara_model::core::{
     create_notification, Body, NewNotification, NotificationType, User, UserCredential, UserRecord,
 };
-use ara_model::db::{tx, Connection, TxError};
+use ara_model::db::{tx, Connection};
 use chrono::{Duration, Utc};
-use failure::{Error, ResultExt, Fail};
+use failure::{Error, Fail};
 use serde::Serialize;
 
 pub fn password_reset_init(

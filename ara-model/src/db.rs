@@ -2,7 +2,6 @@ use diesel::pg::PgConnection;
 use r2d2::Pool;
 use r2d2_diesel::ConnectionManager;
 use failure::Fail;
-use ara_error::{ResultExt, BoxedError};
 
 pub type Connection = PgConnection;
 pub type ConnectionPool = Pool<ConnectionManager<Connection>>;

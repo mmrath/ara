@@ -10,7 +10,7 @@ use ara_model::core::{
     create_notification, Body, NewNotification, NotificationType, UserCredential,
 };
 use ara_model::core::{NewUserRecord, User, UserSignUp};
-use ara_model::db::{tx, Connection, TxError};
+use ara_model::db::{tx, Connection};
 
 use crate::shared::config::AppConfig;
 use crate::shared::{argon2_hash, new_uuid, sha256_hex, sha512, template, PlainContext};

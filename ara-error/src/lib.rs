@@ -3,8 +3,7 @@ use serde::Serialize;
 use serde_json::Value;
 use serde_type_name::type_name;
 use std::fmt::{self, Display};
-use std::error::Error;
-use log::{info,error};
+use log::{info, error};
 
 
 #[allow(unused_imports)]
@@ -18,7 +17,6 @@ pub trait HttpResponse: Send + Sync + 'static {
     fn body(&self) -> Value;
     fn status(&self) -> u16;
 }
-
 
 pub trait ApiErrorKind: Fail + Sized {
     type Error: Fail + From<Context<Self>>;
@@ -70,9 +68,9 @@ pub struct BoxedError {
     inner: failure::Error
 }
 
-impl From<failure::Error> for BoxedError{
+impl From<failure::Error> for BoxedError {
     fn from(err: failure::Error) -> Self {
-        Self{
+        Self {
             inner: err
         }
     }
@@ -251,7 +249,6 @@ impl<ErrorKindT: Fail> AraError<ErrorKindT> {
 }
 
 
-
 impl<T: Serialize + Fail + Display + Copy> AraError<T> {
     pub fn map_err<E: Into<failure::Error>>(error_kind: T) -> impl Fn(E) -> Self {
         move |err| Self {
@@ -264,7 +261,6 @@ impl<T: Serialize + Fail + Display + Copy> AraError<T> {
             inner: err.into().context(error_kind),
         }
     }
-
 }
 
 impl<ErrorKindT: Fail> Fail for AraError<ErrorKindT> {
@@ -290,7 +286,6 @@ impl<ErrorKindT: Fail> From<ErrorKindT> for AraError<ErrorKindT> {
 }
 
 
-
 impl<ErrorKindT: Fail> From<Context<ErrorKindT>> for AraError<ErrorKindT> {
     fn from(inner: Context<ErrorKindT>) -> Self {
         Self { inner }
@@ -298,18 +293,8 @@ impl<ErrorKindT: Fail> From<Context<ErrorKindT>> for AraError<ErrorKindT> {
 }
 
 
-
-
-
-
-
-
-
-
-
-
 #[derive(Debug)]
-pub enum AppError<K:Fail>{
+pub enum AppError<K: Fail> {
     Handled(Context<K>),
     Unhandled(BoxedError),
 }
@@ -317,15 +302,15 @@ pub enum AppError<K:Fail>{
 impl<K: Fail> Fail for AppError<K> {
     fn cause(&self) -> Option<&Fail> {
         match self {
-            AppError::Handled(inner) => {inner.cause()},
-            AppError::Unhandled(box_error) => {Some(box_error.inner.as_fail())}
+            AppError::Handled(inner) => { inner.cause() }
+            AppError::Unhandled(box_error) => { Some(box_error.inner.as_fail()) }
         }
     }
 
     fn backtrace(&self) -> Option<&Backtrace> {
         match self {
-            AppError::Handled(inner) => {inner.backtrace()},
-            AppError::Unhandled(box_error) => {Some(box_error.inner.backtrace())}
+            AppError::Handled(inner) => { inner.backtrace() }
+            AppError::Unhandled(box_error) => { Some(box_error.inner.backtrace()) }
         }
     }
 }
@@ -333,14 +318,14 @@ impl<K: Fail> Fail for AppError<K> {
 impl<K: Fail> fmt::Display for AppError<K> {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         match self {
-            AppError::Handled(inner) => {inner.fmt(f)},
-            AppError::Unhandled(box_error) => {box_error.inner.fmt(f)}
+            AppError::Handled(inner) => { inner.fmt(f) }
+            AppError::Unhandled(box_error) => { box_error.inner.fmt(f) }
         }
     }
 }
 
 
-impl<K: Fail+HandledError> From<K> for AppError<K> {
+impl<K: Fail + HandledError> From<K> for AppError<K> {
     fn from(kind: K) -> Self {
         Self::from(Context::new(kind))
     }
@@ -352,18 +337,24 @@ impl<K: Fail + HandledError> From<Context<K>> for AppError<K> {
     }
 }
 
-impl<K: Fail+HandledError> From<failure::Error> for AppError<K> {
+impl<K: Fail + HandledError> From<failure::Error> for AppError<K> {
     fn from(inner: failure::Error) -> Self {
-        AppError::Unhandled(BoxedError{inner})
+        AppError::Unhandled(BoxedError { inner })
     }
 }
 
-impl<K> ApiErrorKind for K where K:Serialize + Fail + HandledError{
-    type Error= AppError<Self>;
+impl<K> ApiErrorKind for K where K: Serialize + Fail + HandledError {
+    type Error = AppError<Self>;
 }
 
-pub trait HandledError: Serialize {
+pub trait HandledError: Serialize + Fail {
     fn status(&self) -> u16;
+}
+
+impl<T: HttpStatus + Serialize + Fail> HandledError for T {
+    fn status(&self) -> u16 {
+        HttpStatus::status(self)
+    }
 }
 
 impl<T: Serialize + Fail + HandledError> Serialize for AppError<T> {
@@ -378,8 +369,8 @@ impl<T: Serialize + Fail + HandledError> Serialize for AppError<T> {
         let type_name = match self {
             AppError::Handled(inner) => {
                 type_name(inner.get_context()).unwrap_or("InternalError")
-            },
-            AppError::Unhandled(_) => {"InternalError"}
+            }
+            AppError::Unhandled(_) => { "InternalError" }
         };
 
 
@@ -395,7 +386,7 @@ impl<T: Serialize + Fail + HandledError> Serialize for AppError<T> {
         match self {
             AppError::Handled(inner) => {
                 state.serialize_field("kind", inner.get_context())?;
-            },
+            }
             AppError::Unhandled(_) => {
                 state.serialize_field("kind", "Unknown")?;
             }
@@ -420,7 +411,7 @@ impl<T> HttpResponse for AppError<T> where T: Serialize + Fail + HandledError {
         match self {
             AppError::Handled(inner) => {
                 inner.get_context().status()
-            },
+            }
             AppError::Unhandled(_) => {
                 500
             }
