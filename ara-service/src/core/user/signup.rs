@@ -1,13 +1,13 @@
 use chrono::Duration;
 use chrono::Utc;
-use failure::{Error,Fail};
+use failure::{Error, Fail};
 use log::debug;
 use serde::Serialize;
 use serde_json::json;
 
 use ara_error::{ApiError, BoxedError};
 use ara_model::core::{
-    create_notification, Body, NewNotification, NotificationType, UserCredential,
+    create_notification, Body, NewNotification, NotificationType, UserCredential, UserRecord,
 };
 use ara_model::core::{NewUserRecord, User, UserSignUp};
 use ara_model::db::{tx, Connection};
@@ -15,7 +15,10 @@ use ara_model::db::{tx, Connection};
 use crate::shared::config::AppConfig;
 use crate::shared::{argon2_hash, new_uuid, sha256_hex, sha512, template, PlainContext};
 
-pub fn sign_up(context: &dyn PlainContext, user_ac: &UserSignUp) -> Result<User, SignUpError> {
+pub fn sign_up(
+    context: &dyn PlainContext,
+    user_ac: &UserSignUp,
+) -> Result<UserRecord, SignUpError> {
     tx(context.db(), |conn| {
         debug!("User to register {:?}", user_ac);
         let config = AppConfig::get();
@@ -70,7 +73,7 @@ pub fn sign_up(context: &dyn PlainContext, user_ac: &UserSignUp) -> Result<User,
     })
 }
 
-fn create_email_body(user: &User, token: &str, base_url: &str) -> Result<String, Error> {
+fn create_email_body(user: &UserRecord, token: &str, base_url: &str) -> Result<String, Error> {
     use serde_json::value::Map;
     let mut data = Map::new();
     data.insert("base_url".to_owned(), json!(base_url));
@@ -80,7 +83,11 @@ fn create_email_body(user: &User, token: &str, base_url: &str) -> Result<String,
     Ok(email_body)
 }
 
-fn send_activation_email(conn: &Connection, user: &User, email_body: String) -> Result<(), Error> {
+fn send_activation_email(
+    conn: &Connection,
+    user: &UserRecord,
+    email_body: String,
+) -> Result<(), Error> {
     let new_notification = NewNotification {
         notification_type: NotificationType::Email,
         from: Some("support@test.com".to_owned()),

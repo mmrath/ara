@@ -66,7 +66,6 @@ impl UserCredential {
         activation_key: &str,
     ) -> Result<Option<(UserRecord, UserCredential)>, Error> {
         use crate::schema::app_user;
-        use crate::schema::user_credential;
         debug!("Finding by activation key {}", activation_key);
         let res = user_credential::table
             .filter(user_credential::activation_key.eq(activation_key))
@@ -82,7 +81,6 @@ impl UserCredential {
         reset_key: &str,
     ) -> Result<Option<(UserRecord, UserCredential)>, Error> {
         use crate::schema::app_user;
-        use crate::schema::user_credential;
         debug!("Finding user with reset key {}", reset_key);
         let res = user_credential::table
             .filter(user_credential::reset_key.eq(reset_key))
@@ -99,7 +97,6 @@ impl UserCredential {
         reset_key: &str,
         reset_expiry: DateTime<Utc>,
     ) -> Result<(), Error> {
-        use crate::schema::user_credential;
         let target = user_credential::table.filter(user_credential::id.eq(user_id));
         let res = diesel::update(target)
             .set((
@@ -112,7 +109,6 @@ impl UserCredential {
     }
 
     pub fn set_activated(conn: &Connection, user_id: i64) -> Result<(), Error> {
-        use crate::schema::user_credential;
         let target = user_credential::table.filter(user_credential::id.eq(user_id));
         let res = diesel::update(target)
             .set((

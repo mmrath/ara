@@ -74,7 +74,12 @@ fn process_variant(
     let mut http_impls = None;
 
     let enum_variant = variant.ast().ident;
-    for meta_items in variant.ast().attrs.iter().filter_map(get_custom_error_meta_items) {
+    for meta_items in variant
+        .ast()
+        .attrs
+        .iter()
+        .filter_map(get_custom_error_meta_items)
+    {
         for meta_item in meta_items {
             match meta_item {
                 // Parse `#[serde(bound(serialize = "D: Serialize", deserialize = "D: Deserialize"))]`

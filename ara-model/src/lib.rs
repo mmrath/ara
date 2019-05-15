@@ -22,3 +22,4 @@ pub mod error;
 pub(crate) mod schema;
 
 pub mod core;
+pub mod shared;

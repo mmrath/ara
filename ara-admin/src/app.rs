@@ -1,4 +1,4 @@
-use crate::web::core::user;
+use crate::core::user;
 use ara_common::config::AppConfig;
 use ara_model::db::PooledConnection;
 use log::info;
@@ -34,7 +34,7 @@ pub fn rocket(config: &AppConfig) -> (Rocket, PooledConnection) {
     let rocket = rocket::custom(config)
         .manage(pool)
         .register(catchers![not_found])
-        .mount("/api/user", user::routes());
+        .mount("/api/user", user::web::routes());
 
     (rocket, conn)
 }

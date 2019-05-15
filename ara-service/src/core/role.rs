@@ -1,4 +1,4 @@
-use crate::shared::{ServiceError};
+use crate::shared::ServiceError;
 use ara_model::core::{NewRole, Role, RoleUpdate};
 use ara_model::db::{tx, Connection};
 
@@ -13,7 +13,7 @@ pub fn create(conn: &Connection, new_role: &NewRole<'_>) -> Result<Role, Service
 }
 
 pub fn update(conn: &Connection, role_update: &RoleUpdate) -> Result<Role, ServiceError> {
-   let r = tx(conn, |conn| Role::update(conn, &role_update))?;
+    let r = tx(conn, |conn| Role::update(conn, &role_update))?;
     Ok(r)
 }
 

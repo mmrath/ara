@@ -9,26 +9,24 @@
 --
 -- SELECT diesel_manage_updated_at('users');
 -- ```
-CREATE OR REPLACE FUNCTION auto_manage_updated_at(_tbl regclass)
+CREATE OR REPLACE FUNCTION auto_manage_updated_at_and_version(_tbl regclass)
     RETURNS VOID AS
 $$
 BEGIN
     EXECUTE format('CREATE TRIGGER set_updated_at BEFORE UPDATE ON %s
-                      FOR EACH ROW EXECUTE PROCEDURE auto_set_updated_at()', _tbl);
+                      FOR EACH ROW EXECUTE PROCEDURE auto_set_audit_columns()', _tbl);
 END;
 $$
     LANGUAGE plpgsql;
 
-CREATE OR REPLACE FUNCTION auto_set_updated_at()
+CREATE OR REPLACE FUNCTION auto_set_audit_columns()
     RETURNS trigger AS
 $$
 BEGIN
-    IF (
-            NEW IS DISTINCT FROM OLD AND
-            NEW.updated_at IS NOT DISTINCT FROM OLD.updated_at
-        )
+    IF (NEW IS DISTINCT FROM OLD)
     THEN
         NEW.updated_at := current_timestamp;
+        NEW.version := OLD.version + 1;
     END IF;
     RETURN NEW;
 END;
@@ -647,6 +645,18 @@ CREATE TABLE user_credential
     CONSTRAINT fk_user_credential_01 FOREIGN KEY (id) REFERENCES app_user (id)
 );
 
+CREATE TABLE auth_token (
+       id BIGSERIAL NOT NULL,
+       created_at TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT current_timestamp,
+       updated_at TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT current_timestamp,
+       user_id BIGINT NOT NULL REFERENCES app_user(id),
+       token TEXT NOT NULL UNIQUE,
+       expires_at TIMESTAMP WITH TIME ZONE NOT NULL,
+       mobile BOOLEAN NOT NULL DEFAULT FALSE,
+       identifier TEXT,
+       CONSTRAINT pk_auth_token PRIMARY KEY (id)
+);
+
 CREATE TABLE role
 (
     id          SERIAL PRIMARY KEY,
@@ -680,9 +690,9 @@ CREATE TABLE role_permission
     CONSTRAINT role_permission_fk_02 FOREIGN KEY (permission_id) REFERENCES permission (id)
 );
 
-SELECT auto_manage_updated_at('app_user');
-SELECT auto_manage_updated_at('user_credential');
-SELECT auto_manage_updated_at('role');
+SELECT auto_manage_updated_at_and_version('app_user');
+SELECT auto_manage_updated_at_and_version('user_credential');
+SELECT auto_manage_updated_at_and_version('role');
 
 CREATE TABLE user_role
 (

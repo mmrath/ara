@@ -25,7 +25,7 @@ fn create_get_update_user() {
                 "email": EMAIL,
         });
 
-        let resp = create_test_user(&client, user_json);
+        let resp = create_test_user(&client, &user_json);
 
         let user_id: i64 = resp.get("id").unwrap().as_i64().unwrap();
 
@@ -39,18 +39,19 @@ fn create_get_update_user() {
         assert_eq!(user.get("activated").unwrap(), false);
         assert_eq!(user.get("version").unwrap(), 1);
 
-        let resp = update_test_user(&client, user_id, user_json);
+        let resp = update_test_user(&client, user_id, &user_json);
     };
     run_test!(|client, conn| test(client, conn));
 }
 
-fn create_test_user(client: &Client, user_json: Value) -> Map<String, Value> {
+fn create_test_user(client: &Client, user_json: &Value) -> Map<String, Value> {
     let mut resp = client
         .post("/api/user/")
         .header(ContentType::JSON)
         .body(user_json.to_string())
         .dispatch();
 
+    info!("Result is {:?}", resp);
     let resp_body = json_map(&mut resp);
     info!("Result is {:?}", resp);
     info!("Body is {:?}", resp_body);
@@ -81,7 +82,7 @@ fn get_test_user(client: &Client, user_id: i64) -> Map<String, Value> {
     resp_body
 }
 
-fn update_test_user(client: &Client, user_id: i64, user_json: Value) -> Map<String, Value> {
+fn update_test_user(client: &Client, user_id: i64, user_json: &Value) -> Map<String, Value> {
     let mut resp = client
         .put(format!("/api/user/{}", user_id))
         .header(ContentType::JSON)

@@ -1,10 +1,10 @@
 use crate::shared::config::AppConfig;
-use crate::shared::Context;
 use crate::shared::{argon2_hash, argon2_verify, sha512};
-use ara_error::{ApiError,BoxedError};
+use crate::shared::{Context, ServiceErrorKind};
+use ara_error::{unexpected_error, AppError, HttpStatus};
 use ara_model::core::{User, UserCredential};
 use ara_model::db::{tx, Connection};
-use failure::{Fail};
+use failure::Fail;
 use serde::Serialize;
 
 pub fn change_password(
@@ -30,7 +30,8 @@ fn change_password_internal(
     new_password: &str,
     config: &AppConfig,
 ) -> Result<(), PasswordChangeError> {
-    let user = User::find_by_id(conn, user.id)?;
+    let user =
+        User::find_by_id(conn, user.id)?.ok_or_else(|| unexpected_error("User not found"))?;
 
     if user.active {
         Err(PasswordChangeErrorKind::AccountNotActive)?;
@@ -65,21 +66,19 @@ fn change_password_internal(
     Ok(())
 }
 
-#[derive(Debug, Serialize, Fail, ApiError)]
+#[derive(Debug, Serialize, Fail, HttpStatus)]
 pub enum PasswordChangeErrorKind {
     #[fail(display = "Invalid password")]
-    #[api_error(http(400))]
+    #[http_status(400)]
     InvalidCurrentPassword,
 
     #[fail(display = "Account is currently locked")]
-    #[api_error(http(400))]
+    #[http_status(400)]
     AccountLocked,
 
     #[fail(display = "Account is currently locked")]
-    #[api_error(http(400))]
+    #[http_status(400)]
     AccountNotActive,
-
-    #[fail(display = "{}", _0)]
-    #[api_error(map_from(Error), http(500))]
-    Internal(BoxedError),
 }
+
+pub type PasswordChangeError = AppError<PasswordChangeErrorKind>;

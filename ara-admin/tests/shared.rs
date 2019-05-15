@@ -24,9 +24,9 @@ macro_rules! run_test {
         crate::shared::init_test();
         let _test_lock = crate::shared::DB_LOCK.lock();
         let _test_execution_start = std::time::Instant::now();
-        let config = ara_service::shared::config::AppConfig::get();
+        let config = ara_common::config::AppConfig::get();
         info!("Loaded config");
-        let (rocket, conn) = ara_admin_api::rocket(config);
+        let (rocket, conn) = ara_admin::rocket(config);
         info!(
             "Elapsed time at  building rocket {:?}",
             _test_execution_start.elapsed()
@@ -53,7 +53,7 @@ macro_rules! run_test {
 pub fn init_test() {
     INIT_TEST_APP.get_or_init(|| {
         log4rs::init_file("../res/config/log4rs-test.yaml", Default::default()).unwrap();
-        ara_service::shared::config::AppConfig::init("../res/config", "local-test");
+        ara_common::config::AppConfig::init("../res/config", "local-test");
         ()
     });
 }

@@ -4,9 +4,8 @@ members = [
     "ara-error",
     "ara-error-macros",
     "ara-model",
-    "ara-service",
-    "ara-rocket-app",
+    "ara-client-api",
     "ara-admin",
-    "ara-test-utils"
+    "ara-test-utils",
 ]
 

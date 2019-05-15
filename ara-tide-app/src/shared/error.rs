@@ -5,7 +5,7 @@ use http_service::Body;
 use log::{error, info};
 use serde::Serialize;
 use serde_json::{json, Value};
-use tide::{IntoResponse, Response};
+use tide::response::{IntoResponse, Response};
 
 #[derive(Debug)]
 pub struct HttpError {

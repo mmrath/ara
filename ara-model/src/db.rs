@@ -1,7 +1,7 @@
 use diesel::pg::PgConnection;
+use failure::Fail;
 use r2d2::Pool;
 use r2d2_diesel::ConnectionManager;
-use failure::Fail;
 
 pub type Connection = PgConnection;
 pub type ConnectionPool = Pool<ConnectionManager<Connection>>;
@@ -22,11 +22,10 @@ macro_rules! with_tx {
             Ok(_) => tm.commit_transaction(conn).map_err(TxError::CommitFailed)?,
         }
         res
-    }
+    };
 }
 
-
-pub fn tx<T: Sized, E:From<failure::Error>, F: FnOnce(&Connection) -> Result<T, E>>(
+pub fn tx<T: Sized, E: From<failure::Error>, F: FnOnce(&Connection) -> Result<T, E>>(
     conn: &Connection,
     f: F,
 ) -> Result<T, E> {
@@ -34,14 +33,12 @@ pub fn tx<T: Sized, E:From<failure::Error>, F: FnOnce(&Connection) -> Result<T, 
     use diesel::Connection;
 
     let tm = conn.transaction_manager();
-    tm.begin_transaction(conn).map_err(|e|e.into())?;
+    tm.begin_transaction(conn).map_err(|e| e.into())?;
     let res = f(conn);
 
     match res {
-        Err(ref _e) => tm
-            .rollback_transaction(conn)
-            .map_err(|e|e.into())?,
-        Ok(_) => tm.commit_transaction(conn).map_err(|e|e.into())?,
+        Err(ref _e) => tm.rollback_transaction(conn).map_err(|e| e.into())?,
+        Ok(_) => tm.commit_transaction(conn).map_err(|e| e.into())?,
     }
     res
 }

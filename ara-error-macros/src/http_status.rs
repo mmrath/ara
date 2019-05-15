@@ -1,6 +1,6 @@
-use proc_macro2::{TokenStream};
+use proc_macro2::TokenStream;
 use quote::quote;
-use syn::{Meta, NestedMeta, Lit, DeriveInput, Data};
+use syn::{Data, DeriveInput, Lit, Meta, NestedMeta};
 use synstructure::Structure;
 
 #[allow(clippy::needless_pass_by_value)]
@@ -31,11 +31,14 @@ pub fn http_status_derive(s: Structure<'_>) -> TokenStream {
     }
 }
 
-fn process_variant(
-    variant: &synstructure::VariantInfo<'_>,
-) -> TokenStream {
+fn process_variant(variant: &synstructure::VariantInfo<'_>) -> TokenStream {
     let mut http_impls = None;
-    for meta_item in variant.ast().attrs.iter().filter_map(get_http_status_meta_items) {
+    for meta_item in variant
+        .ast()
+        .attrs
+        .iter()
+        .filter_map(get_http_status_meta_items)
+    {
         match meta_item {
             Meta::List(ref m) => {
                 if m.nested.len() == 1 {
@@ -47,16 +50,14 @@ fn process_variant(
                                 let code = http_lit.value();
                                 let pat = variant.pat();
                                 let http_match_wing = quote! {
-                                        #pat => {
-                                            return #code as u16
-                                        },
-                                    };
+                                    #pat => {
+                                        return #code as u16
+                                    },
+                                };
                                 http_impls = Some(http_match_wing);
                             }
                         }
-                        _ => {
-                            panic!("Only #[http_status(code)] is currently supported")
-                        }
+                        _ => panic!("Only #[http_status(code)] is currently supported"),
                     }
                 }
             }
@@ -70,7 +71,6 @@ fn process_variant(
 
     (http_impls.unwrap())
 }
-
 
 fn get_http_status_meta_items(attr: &syn::Attribute) -> Option<Meta> {
     if attr.path.segments.len() == 1 && attr.path.segments[0].ident == "http_status" {

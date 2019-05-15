@@ -14,7 +14,6 @@ use chrono::{DateTime, Utc};
 #[derive(
     Queryable,
     Identifiable,
-    AsChangeset,
     Associations,
     Debug,
     Serialize,
@@ -40,6 +39,48 @@ pub struct UserRecord {
     pub created_by: String,
     pub updated_at: DateTime<Utc>,
     pub updated_by: String,
+    pub version: i32,
+}
+
+#[derive(
+    Queryable,
+    Identifiable,
+    AsChangeset,
+    Associations,
+    Debug,
+    Serialize,
+    Deserialize,
+    Clone,
+    Eq,
+    PartialEq,
+    Validate,
+)]
+#[table_name = "app_user"]
+#[serde(rename_all = "camelCase")]
+pub struct UserUpdateRecord<'a> {
+    pub(crate) id: i64,
+    pub(crate) first_name: Option<&'a str>,
+    pub(crate) last_name: Option<&'a str>,
+    #[validate(length(min = "2"))]
+    pub(crate) username: Option<&'a str>,
+    #[validate(email)]
+    pub(crate) email: Option<&'a str>,
+    pub(crate) phone_number: Option<Option<&'a str>>,
+    pub(crate) active: Option<bool>,
+    pub(crate) updated_at: DateTime<Utc>,
+    pub(crate) updated_by: &'a str,
+    pub(crate) version: i32,
+}
+
+#[derive(Debug, Clone, Eq, PartialEq)]
+pub struct UserUpdate<'a> {
+    pub id: i64,
+    pub first_name: ColumnValue<&'a str>,
+    pub last_name: ColumnValue<&'a str>,
+    pub username: ColumnValue<&'a str>,
+    pub email: ColumnValue<&'a str>,
+    pub phone_number: ColumnValue<Option<&'a str>>,
+    pub active: ColumnValue<bool>,
     pub version: i32,
 }
 
@@ -74,11 +115,14 @@ impl From<UserRecord> for User {
 #[derive(Insertable, Debug, Serialize, Deserialize, Clone)]
 #[table_name = "app_user"]
 #[serde(rename_all = "camelCase")]
-pub struct NewUserRecord<'a> {
+pub(crate) struct UserNewRecord<'a> {
     pub first_name: &'a str,
     pub last_name: &'a str,
     pub username: &'a str,
     pub email: &'a str,
+    pub phone_number: Option<&'a str>,
+    pub created_by: &'a str,
+    pub updated_by: &'a str,
 }
 
 #[derive(Debug, Serialize, Deserialize, Clone)]
@@ -87,18 +131,7 @@ pub struct NewUser<'a> {
     pub first_name: &'a str,
     pub last_name: &'a str,
     pub email: &'a str,
-    pub roles: Option<Vec<i32>>,
-}
-
-impl<'a, 'b: 'a> From<&'b NewUser<'a>> for NewUserRecord<'a> {
-    fn from(n: &'b NewUser<'a>) -> Self {
-        NewUserRecord {
-            first_name: n.first_name,
-            last_name: n.last_name,
-            username: n.email,
-            email: n.email,
-        }
-    }
+    pub phone_number: Option<&'a str>,
 }
 
 #[derive(Debug, Serialize, Deserialize, Clone)]
@@ -129,12 +162,33 @@ pub struct UserRoleRecord {
 }
 
 impl User {
-    pub fn insert(conn: &Connection, new_user: &NewUserRecord<'_>) -> Result<User, Error> {
+    pub fn insert(
+        conn: &Connection,
+        new_user: WithAudit<'_, NewUser<'_>>,
+    ) -> Result<UserRecord, Error> {
         let res = insert_into(app_user::table)
-            .values(new_user)
+            .values(UserNewRecord::from(new_user))
             .get_result::<UserRecord>(conn)?;
-        Ok(res.into())
+        Ok(res)
     }
+
+    pub fn update<'a>(
+        conn: &Connection,
+        update_user: impl Into<UserUpdateRecord<'a>>,
+    ) -> Result<UserRecord, Error> {
+        use crate::schema::app_user::columns::version;
+        let update_record: UserUpdateRecord<'a> = update_user.into();
+        let target = app_user::table.filter(
+            app_user::id
+                .eq(update_record.id)
+                .and(version.eq(update_record.version)),
+        );
+        let res = update(target)
+            .set(update_record)
+            .get_result::<UserRecord>(conn)?;
+        Ok(res)
+    }
+
     pub fn activate(conn: &Connection, user_id: i64) -> Result<(), Error> {
         use crate::schema::app_user::dsl::*;
         update(app_user)
@@ -168,6 +222,7 @@ impl User {
             .execute(conn)?;
         Ok(())
     }
+
     pub fn increment_failed_login_count(conn: &Connection, user_id: i64) -> Result<(), Error> {
         use crate::schema::user_credential::dsl::*;
 
@@ -195,9 +250,9 @@ impl User {
         Ok(())
     }
 
-    pub fn find_by_id(conn: &Connection, id: i64) -> Result<UserRecord, Error> {
+    pub fn find_by_id(conn: &Connection, id: i64) -> Result<Option<UserRecord>, Error> {
         debug!("Finding user by id {}", id);
-        let res = app_user::table.find(id).first(conn)?;
+        let res = app_user::table.find(id).first(conn).optional()?;
         Ok(res)
     }
 
@@ -239,13 +294,155 @@ impl User {
         conn: &Connection,
         username: &str,
     ) -> Result<Option<UserRecord>, Error> {
-        use crate::schema::app_user;
-
         let res = app_user::table
             .filter(app_user::username.eq(username))
             .select(app_user::all_columns)
             .first::<UserRecord>(conn)
             .optional()?;
         Ok(res)
+    }
+}
+
+pub struct WithAudit<'a, T> {
+    audit_user: &'a str,
+    record: &'a T,
+}
+
+impl<'a, T> WithAudit<'a, T> {
+    pub fn new(audit_user: &'a str, record: &'a T) -> WithAudit<'a, T> {
+        Self { audit_user, record }
+    }
+}
+
+impl<'a, 'b: 'a> From<WithAudit<'a, NewUser<'a>>> for UserNewRecord<'a> {
+    fn from(n: WithAudit<'a, NewUser<'a>>) -> Self {
+        UserNewRecord {
+            first_name: n.record.first_name,
+            last_name: n.record.last_name,
+            username: n.record.email,
+            email: n.record.email,
+            phone_number: n.record.phone_number,
+            created_by: n.audit_user,
+            updated_by: n.audit_user,
+        }
+    }
+}
+
+pub trait AuditExt: Sized {
+    fn with_audit<'a>(&'a self, username: &'a str) -> WithAudit<'a, Self>;
+}
+
+impl<T> AuditExt for T where T: Sized {
+    fn with_audit<'a>(&'a self, username: &'a str) -> WithAudit<'a, T> {
+        WithAudit::new(username, self)
+    }
+}
+
+
+impl<'a, T> From<WithAudit<'a, T>> for UserUpdateRecord<'a>
+where
+    UserUpdate<'a>: From<&'a T>,
+{
+    fn from(n: WithAudit<'a, T>) -> Self {
+        let update: UserUpdate<'a> = n.record.into();
+        UserUpdateRecord {
+            id: update.id,
+            first_name: update.first_name.into_option(),
+            last_name: update.last_name.into_option(),
+            username: update.username.into_option(),
+            email: update.email.into_option(),
+            phone_number: update.phone_number.into_option(),
+            active: update.active.into_option(),
+            updated_by: n.audit_user.as_ref(),
+            updated_at: Utc::now(),
+            version: update.version,
+        }
+    }
+}
+
+trait Auditable {
+    type CreatedBy;
+    type CreatedAt;
+    type UpdatedBy;
+    type UpdatedAt;
+
+    fn created_by() -> Self::CreatedBy;
+    fn created_at() -> Self::CreatedAt;
+    fn updated_by() -> Self::UpdatedBy;
+    fn updated_at() -> Self::UpdatedAt;
+}
+
+impl<'a> Auditable for app_user::table {
+    type CreatedBy = app_user::created_by;
+    type CreatedAt = app_user::created_at;
+    type UpdatedBy = app_user::updated_by;
+    type UpdatedAt = app_user::updated_at;
+
+    fn created_by() -> Self::CreatedBy {
+        app_user::columns::created_by
+    }
+
+    fn created_at() -> Self::CreatedAt {
+        app_user::columns::created_at
+    }
+
+    fn updated_by() -> Self::UpdatedBy {
+        app_user::columns::updated_by
+    }
+
+    fn updated_at() -> Self::UpdatedAt {
+        app_user::columns::updated_at
+    }
+}
+
+#[derive(Clone, Copy, PartialEq, PartialOrd, Eq, Ord, Debug, Hash)]
+pub enum ColumnValue<T> {
+    Changed(T),
+    Unchanged,
+}
+
+impl<T> Default for ColumnValue<T> {
+    #[inline]
+    fn default() -> ColumnValue<T> {
+        ColumnValue::Unchanged
+    }
+}
+
+impl<T> From<T> for ColumnValue<T> {
+    fn from(val: T) -> ColumnValue<T> {
+        ColumnValue::Changed(val)
+    }
+}
+
+impl<T> ColumnValue<T> {
+    fn into_option(self) -> Option<T> {
+        match self {
+            ColumnValue::Changed(value) => Some(value),
+            ColumnValue::Unchanged => None,
+        }
+    }
+}
+
+impl<T> Into<Option<T>> for ColumnValue<T> {
+    fn into(self) -> Option<T> {
+        match self {
+            ColumnValue::Changed(value) => Some(value),
+            ColumnValue::Unchanged => None,
+        }
+    }
+}
+
+impl<'a> From<&'a User> for UserUpdate<'a> {
+    fn from(user: &'a User) -> Self {
+        UserUpdate {
+            id: user.id,
+            first_name: ColumnValue::Changed(user.first_name.as_ref()),
+            last_name: ColumnValue::Changed(user.last_name.as_ref()),
+            username: ColumnValue::Changed(user.username.as_str()),
+            email: ColumnValue::Changed(user.email.as_str()),
+            phone_number: ColumnValue::Changed(user.phone_number.as_ref().map(String::as_ref)),
+            active: ColumnValue::Changed(user.active),
+            version: user.version,
+        }
     }
 }

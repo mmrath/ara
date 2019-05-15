@@ -8,7 +8,7 @@ authors = ["Murali Mohan Rath <murali@mmrath.com>"]
 [dependencies]
 ara-error-macros={version = "^0.1", path = "../ara-error-macros"}
 log = "0.4.6"
-serde= "1.0.89"
+serde= "1.0.90"
 serde_json= "1.0.39"
 failure= "0.1.5"
 serde_type_name= "0.2.0"

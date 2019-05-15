@@ -9,7 +9,7 @@ name = "ara_error_macros"
 proc-macro = true
 
 [dependencies]
-quote = "0.6.11"
-syn = "0.15.29"
+quote = "0.6.12"
+syn = "0.15.32"
 synstructure = "0.10.1"
 proc-macro2 = "0.4.27"

@@ -1,32 +1,34 @@
-use futures::future;
-use tide::Extract;
-use tide::IntoResponse;
-use tide::Request;
-use tide::Response;
-use tide::RouteMatch;
+use tide::{self, response::{IntoResponse, Response}};
 
 use ara_model::db::ConnectionPool;
-
-use crate::shared::db::DB;
-use tide::configuration::Store;
+use ara_common::context::{Context, UnauthContext};
 
 #[derive(Clone)]
 pub struct AppState {
     pub db_pool: ConnectionPool,
 }
 
-impl Extract<AppState> for DB {
-    type Fut = future::Ready<Result<Self, Response>>;
+pub trait TideContextExt {
+    fn context(&mut self) -> impl Context;
+    fn unauth_context(&mut self) -> impl UnauthContext;
+}
 
-    fn extract(
-        data: &mut AppState,
-        _req: &mut Request,
-        _params: &Option<RouteMatch<'_>>,
-        _store: &Store,
-    ) -> Self::Fut {
-        let pool = &data.db_pool;
-        pool.get()
-            .map(|conn| future::ok(DB(conn)))
-            .unwrap_or_else(|_e| future::err(http::StatusCode::SERVICE_UNAVAILABLE.into_response()))
+impl<AppData> TideContextExt for tide::Context<AppData> {
+    fn context(&mut self) -> impl Context {
+        unimplemented!()
     }
+
+    fn unauth_context(&mut self) -> impl UnauthContext {
+        unimplemented!()
+    }
+}
+
+pub struct AuthorizedContext {
+    // add user here
+    db: PooledConnection,
+    user: User,
+}
+
+pub struct UnauthorizedContext {
+    db: PooledConnection,
 }

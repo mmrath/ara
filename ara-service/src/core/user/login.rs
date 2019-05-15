@@ -5,7 +5,7 @@ use ara_error::{ApiError, BoxedError};
 use ara_model::core::{User, UserCredential};
 use ara_model::db::{tx, Connection};
 use chrono::Utc;
-use failure::{Fail};
+use failure::Fail;
 use serde::Serialize;
 
 pub fn login(
@@ -43,8 +43,7 @@ fn login_internal(
 
     let password_sha512 = sha512(password.as_ref());
 
-    let valid =
-        argon2_verify(&password_sha512, secret_key, &hash)?;
+    let valid = argon2_verify(&password_sha512, secret_key, &hash)?;
 
     if !valid {
         User::increment_failed_login_count(conn, user.id)?;

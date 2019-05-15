@@ -1,18 +1,16 @@
-use ara_error::{ApiError, BoxedError};
-use serde::Serialize;
+use ara_error::{AppError, BoxedError, HttpStatus};
 use failure::Fail;
+use serde::Serialize;
 
-#[derive(Debug, Fail, Serialize, ApiError)]
+#[derive(Debug, Fail, Serialize, HttpStatus)]
 pub enum ServiceErrorKind {
     #[fail(display = "Validation error")]
-    #[api_error(http(400))]
+    #[http_status(400)]
     ValidationError,
 
     #[fail(display = "Transaction failed")]
-    #[api_error(http(500))]
+    #[http_status(500)]
     TxFailed,
-
-    #[fail(display = "Internal error: {}", _0)]
-    #[api_error(map_from(Error), http(500))]
-    Internal(BoxedError),
 }
+
+pub type ServiceError = AppError<ServiceErrorKind>;

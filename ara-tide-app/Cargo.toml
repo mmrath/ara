@@ -5,14 +5,14 @@ version = "0.1.0"
 authors = ["Murali Mohan Rath <murali@mmrath.com>"]
 
 [[bin]]
-name = "ara_tide_app"
+name = "ara_client_app"
 path = "src/main.rs"
 
 
 [dependencies]
 log = "0.4"
 fern="0.5"
-ara-service={version = "^0.1", path = "../ara-service"}
+ara-common={version = "^0.1", path = "../ara-common"}
 ara-model={version = "^0.1", path = "../ara-model"}
 ara-error={version = "^0.1", path = "../ara-error"}
 chrono = { version = "0.4", features = ["serde"] }

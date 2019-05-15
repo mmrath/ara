@@ -1,18 +1,19 @@
 #![feature(async_await, futures_api)]
 
+use ara_common::config::AppConfig;
+use ara_model::db::Connection;
 use chrono;
 use diesel_migrations::{run_pending_migrations_in_directory, setup_database};
 use fern;
 use log;
-use ara_model::db::Connection;
-use ara_service::shared::config::AppConfig;
 use std::io::stdout;
 
 pub mod core;
 pub mod shared;
 
-use crate::core::{role, user};
+use crate::core::user;
 
+/*
 fn setup_logger() -> Result<(), fern::InitError> {
     fern::Dispatch::new()
         .format(|out, message, record| {
@@ -77,3 +78,7 @@ fn migrate_db(conn: &Connection) {
     run_pending_migrations_in_directory(conn, "./res/migrations".as_ref(), &mut stdout())
         .expect("Failed to run pending migration");
 }
+
+*/
+
+fn main() {}

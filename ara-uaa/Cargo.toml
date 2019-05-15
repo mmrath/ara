@@ -4,21 +4,27 @@ name = "uaa"
 version = "0.1.0"
 authors = ["Murali Mohan Rath <murali@mmrath.com>"]
 
-# This is required to make sure cargo does not complain this not in parents workspace
-[workspace]
-members = []
-
-
 [[bin]]
-name = "auth-server"
+name = "ara-uaa"
 path = "src/main.rs"
 
 [dependencies]
 oxide-auth={version="^0.4", git="https://github.com/HeroicKatora/oxide-auth", default-features=false, features=["rocket-frontend"]}
-rocket={version = "0.4.0"}
-rocket_contrib={version = "0.4.0"}
 log="^0.4"
 reqwest="*"
 serde_urlencoded="*"
 serde="^1.0"
 serde_json="^1.0"
+
+[dependencies.rocket]
+version = "0.4.0"
+git = "https://github.com/SergioBenitez/Rocket"
+default-features = false
+
+[dependencies.rocket_contrib]
+version = "0.4.0"
+git = "https://github.com/SergioBenitez/Rocket"
+default-features = false
+features = ["json"]
+
+

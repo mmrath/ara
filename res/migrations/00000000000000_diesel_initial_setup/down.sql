@@ -2,7 +2,7 @@
 DROP TABLE role_permission;
 DROP TABLE user_role;
 DROP TABLE role;
-DROP TABLE user_token;
+DROP TABLE auth_token;
 DROP TABLE user_credential;
 DROP TABLE app_user;
 DROP TABLE country;

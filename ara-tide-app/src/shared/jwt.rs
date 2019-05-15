@@ -1,8 +1,8 @@
+use ara_common::utils::new_uuid;
+use ara_model::core::User;
 use chrono::{DateTime, Duration, Utc};
 use failure::Error;
 use jsonwebtoken::{decode, encode, Algorithm, Header, Validation};
-use ara_model::core::User;
-use ara_service::shared::new_uuid;
 use serde::{Deserialize, Serialize};
 
 #[derive(Serialize, Deserialize)]

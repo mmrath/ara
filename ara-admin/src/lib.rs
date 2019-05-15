@@ -9,6 +9,5 @@ extern crate rocket_contrib;
 pub use self::app::*;
 
 mod app;
-pub(crate) mod service;
+mod core;
 mod shared;
-mod web;

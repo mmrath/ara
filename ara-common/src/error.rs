@@ -1,14 +1,12 @@
-use ara_error::{ApiError,BoxedError};
+use ara_error::{AppError, HttpStatus};
+use failure::Fail;
 use serde::Serialize;
-use failure::{Fail};
 
-#[derive(Debug, Fail, Serialize, ApiError)]
+#[derive(Debug, Fail, Serialize, HttpStatus)]
 pub enum ServiceErrorKind {
     #[fail(display = "Validation error")]
-    #[api_error(http(400))]
+    #[http_status(400)]
     ValidationError,
-
-    #[fail(display = "{}", _0)]
-    #[api_error(map_from(Error), http(500))]
-    Internal(BoxedError),
 }
+
+pub type ServiceError = AppError<ServiceErrorKind>;

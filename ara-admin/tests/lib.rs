@@ -1,4 +1,4 @@
-extern crate ara_admin_api;
+extern crate ara_admin;
 
 #[macro_use]
 pub mod shared;

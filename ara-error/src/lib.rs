@@ -1,10 +1,9 @@
 use failure::{Backtrace, Context, Fail};
+use log::{error, info};
 use serde::Serialize;
 use serde_json::Value;
 use serde_type_name::type_name;
 use std::fmt::{self, Display};
-use log::{info, error};
-
 
 #[allow(unused_imports)]
 #[macro_use]
@@ -59,23 +58,19 @@ impl<SuccessT, ErrorT: Fail> ResultExt for Result<SuccessT, ErrorT> {
     }
 }
 
-
 // This is to skip serialization of inner value
 #[derive(Debug, Fail, Serialize)]
 #[fail(display = "{}", inner)]
 pub struct BoxedError {
     #[serde(skip_serializing)]
-    inner: failure::Error
+    inner: failure::Error,
 }
 
 impl From<failure::Error> for BoxedError {
     fn from(err: failure::Error) -> Self {
-        Self {
-            inner: err
-        }
+        Self { inner: err }
     }
 }
-
 
 /// Returns early with an error built from an error kind.
 ///
@@ -104,7 +99,6 @@ macro_rules! bail {
         return Err($kind(format!($fmt, $($arg)+)).into());
     };
 }
-
 
 /// Returns early with an error built from an error kind if a given condition is false.
 ///
@@ -150,50 +144,10 @@ macro_rules! ensure {
     };
 }
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 impl<T: Serialize + Fail + Display> Serialize for AraError<T> {
     fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
-        where
-            S: ::serde::Serializer,
+    where
+        S: ::serde::Serializer,
     {
         use serde::ser::SerializeStruct;
 
@@ -213,7 +167,6 @@ impl<T: Serialize + Fail + Display> Serialize for AraError<T> {
     }
 }
 
-
 pub trait HttpStatus: Send + Sync + 'static {
     fn status(&self) -> u16;
 }
@@ -222,7 +175,10 @@ pub trait ErrorKindFrom<T>: Send + Sync + 'static {
     fn as_kind(e: &T) -> Self;
 }
 
-impl<T> HttpResponse for AraError<T> where T: HttpStatus + Serialize + Fail {
+impl<T> HttpResponse for AraError<T>
+where
+    T: HttpStatus + Serialize + Fail,
+{
     fn body(&self) -> Value {
         let val = serde_json::to_value(self).unwrap_or_else(|e| {
             error!("Error converting to json Value {:?}. Value will be null", e);
@@ -247,7 +203,6 @@ impl<ErrorKindT: Fail> AraError<ErrorKindT> {
         self.inner.get_context()
     }
 }
-
 
 impl<T: Serialize + Fail + Display + Copy> AraError<T> {
     pub fn map_err<E: Into<failure::Error>>(error_kind: T) -> impl Fn(E) -> Self {
@@ -285,13 +240,11 @@ impl<ErrorKindT: Fail> From<ErrorKindT> for AraError<ErrorKindT> {
     }
 }
 
-
 impl<ErrorKindT: Fail> From<Context<ErrorKindT>> for AraError<ErrorKindT> {
     fn from(inner: Context<ErrorKindT>) -> Self {
         Self { inner }
     }
 }
-
 
 #[derive(Debug)]
 pub enum AppError<K: Fail> {
@@ -302,15 +255,15 @@ pub enum AppError<K: Fail> {
 impl<K: Fail> Fail for AppError<K> {
     fn cause(&self) -> Option<&Fail> {
         match self {
-            AppError::Handled(inner) => { inner.cause() }
-            AppError::Unhandled(box_error) => { Some(box_error.inner.as_fail()) }
+            AppError::Handled(inner) => inner.cause(),
+            AppError::Unhandled(box_error) => Some(box_error.inner.as_fail()),
         }
     }
 
     fn backtrace(&self) -> Option<&Backtrace> {
         match self {
-            AppError::Handled(inner) => { inner.backtrace() }
-            AppError::Unhandled(box_error) => { Some(box_error.inner.backtrace()) }
+            AppError::Handled(inner) => inner.backtrace(),
+            AppError::Unhandled(box_error) => Some(box_error.inner.backtrace()),
         }
     }
 }
@@ -318,12 +271,11 @@ impl<K: Fail> Fail for AppError<K> {
 impl<K: Fail> fmt::Display for AppError<K> {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         match self {
-            AppError::Handled(inner) => { inner.fmt(f) }
-            AppError::Unhandled(box_error) => { box_error.inner.fmt(f) }
+            AppError::Handled(inner) => inner.fmt(f),
+            AppError::Unhandled(box_error) => box_error.inner.fmt(f),
         }
     }
 }
-
 
 impl<K: Fail + HandledError> From<K> for AppError<K> {
     fn from(kind: K) -> Self {
@@ -343,7 +295,10 @@ impl<K: Fail + HandledError> From<failure::Error> for AppError<K> {
     }
 }
 
-impl<K> ApiErrorKind for K where K: Serialize + Fail + HandledError {
+impl<K> ApiErrorKind for K
+where
+    K: Serialize + Fail + HandledError,
+{
     type Error = AppError<Self>;
 }
 
@@ -359,20 +314,17 @@ impl<T: HttpStatus + Serialize + Fail> HandledError for T {
 
 impl<T: Serialize + Fail + HandledError> Serialize for AppError<T> {
     fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
-        where
-            S: ::serde::Serializer,
+    where
+        S: ::serde::Serializer,
     {
         use serde::ser::SerializeStruct;
 
         let mut state = serializer.serialize_struct("AppError", 2)?;
 
         let type_name = match self {
-            AppError::Handled(inner) => {
-                type_name(inner.get_context()).unwrap_or("InternalError")
-            }
-            AppError::Unhandled(_) => { "InternalError" }
+            AppError::Handled(inner) => type_name(inner.get_context()).unwrap_or("InternalError"),
+            AppError::Unhandled(_) => "InternalError",
         };
-
 
         //Remove Kind
         let error_name = if type_name.ends_with("Kind") {
@@ -396,8 +348,10 @@ impl<T: Serialize + Fail + HandledError> Serialize for AppError<T> {
     }
 }
 
-
-impl<T> HttpResponse for AppError<T> where T: Serialize + Fail + HandledError {
+impl<T> HttpResponse for AppError<T>
+where
+    T: Serialize + Fail + HandledError,
+{
     fn body(&self) -> Value {
         let val = serde_json::to_value(self).unwrap_or_else(|e| {
             error!("Error converting to json Value {:?}. Value will be null", e);
@@ -409,12 +363,18 @@ impl<T> HttpResponse for AppError<T> where T: Serialize + Fail + HandledError {
 
     fn status(&self) -> u16 {
         match self {
-            AppError::Handled(inner) => {
-                inner.get_context().status()
-            }
-            AppError::Unhandled(_) => {
-                500
-            }
+            AppError::Handled(inner) => inner.get_context().status(),
+            AppError::Unhandled(_) => 500,
         }
     }
+}
+
+#[derive(Debug, Clone, Fail)]
+#[fail(display = "{}", _0)]
+struct StringError(String);
+
+pub fn unexpected_error<T: HandledError, S: Into<String>>(msg: S) -> AppError<T> {
+    AppError::Unhandled(BoxedError {
+        inner: StringError(msg.into()).into(),
+    })
 }
